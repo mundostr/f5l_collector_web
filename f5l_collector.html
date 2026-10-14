@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Colector F5L">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <title>Colector F5L</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fff;
+      --fg: #000;
+      --panel: #fff;
+      --line: #222;
+      --muted: #222;
+      --selected: #111;
+      --selected-fg: #fff;
+      --control-h: 58px;
+      --pad: 14px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); }
+    body { font-size: 18px; line-height: 1.25; }
+    button, input, select { font: inherit; color: var(--fg); }
+    button { min-height: var(--control-h); border: 3px solid #000; border-radius: 8px; background: #fff; font-weight: 800; padding: 10px 14px; cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 4px solid #0877ff; outline-offset: 2px; }
+    input, select { width: 100%; min-height: var(--control-h); border: 3px solid #111; border-radius: 7px; background: #fff; padding: 8px 10px; font-size: 22px; font-weight: 700; }
+    input[type="number"] { font-size: 40px !important; text-align: center; }
+    label { display: block; font-weight: 800; font-size: 16px; margin: 0 0 6px; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: clamp(24px, 5vw, 34px); line-height: 1.0; font-weight: 900; }
+    h2 { font-size: 23px; margin-bottom: 10px; }
+    h3 { font-size: 20px; }
+    .app-header { padding: 14px var(--pad); border-bottom: 4px solid #000; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+    .eyebrow { font-size: 14px; font-weight: 900; letter-spacing: .06em; margin-bottom: 3px; }
+    main { padding: var(--pad); max-width: 900px; margin: 0 auto; }
+    section { margin-bottom: 18px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .small-button { min-height: 44px; font-size: 16px; padding: 6px 10px; }
+    .pilot-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .contest-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field.full { grid-column: 1 / -1; }
+    .panel { border: 3px solid #000; border-radius: 10px; padding: 12px; background: var(--panel); }
+    .subtle { color: var(--muted); font-size: 16px; font-weight: 700; }
+    .person-list { display: grid; gap: 8px; }
+    .person { width: 100%; display: flex; align-items: center; justify-content: flex-start; text-align: left; gap: 12px; min-height: 64px; padding: 10px 12px; }
+    .person-code { background: #000; color: #fff; min-width: 64px; text-align: center; padding: 7px 8px; border-radius: 4px; font-size: 22px; }
+    .person-name { font-size: 21px; font-weight: 800; }
+    .person[aria-pressed="true"] { background: #111; color: #fff; outline: 4px solid #111; outline-offset: 1px; }
+    .person[aria-pressed="true"] .person-code { background: #fff; color: #000; }
+    .add-person-row { display: grid; grid-template-columns: minmax(0, .4fr) repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+    .add-person-row input { font-size: 18px; }
+    .add-person-row button { grid-column: 1 / -1; }
+    .entry-top { background: #000; color: #fff; padding: 14px; border-radius: 8px; margin-bottom: 14px; }
+    .entry-top .code-name { font-size: clamp(23px, 5vw, 32px); font-weight: 900; }
+    .entry-top .pilot-number { font-size: 17px; font-weight: 800; margin-top: 4px; }
+    .entry-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .entry-grid .field label { font-size: 17px; }
+    .entry-grid .field input { min-height: 68px; font-size: 32px; }
+    .flight-inputs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+    .colon { font-size: 32px; font-weight: 900; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .primary { background: #000; color: #fff; }
+    .danger { border-color: #000; background: #fff; }
+    .status { margin-top: 10px; font-weight: 800; min-height: 24px; }
+    .storage-error { margin: var(--pad); padding: 10px 12px; border: 3px solid #000; font-weight: 800; }
+    .records-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .record-round-heading { margin: 18px 0 6px; padding-top: 8px; border-top: 3px solid #000; font-size: 19px; }
+    .record-round-heading:first-child { margin-top: 0; border-top: 0; }
+    .record-group-heading { margin: 10px 0 2px; font-size: 16px; }
+    .record-row { border-top: 2px solid #000; padding: 9px 0; display: flex; justify-content: space-between; gap: 10px; font-weight: 700; }
+    .hidden { display: none !important; }
+    .footer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .note { font-size: 15px; font-weight: 700; margin-top: 8px; }
+    @media (max-width: 520px) {
+      :root { --pad: 10px; --control-h: 54px; }
+      .app-header { align-items: flex-start; }
+      .contest-fields { grid-template-columns: 1fr 1fr; gap: 9px; }
+      .add-person-row { grid-template-columns: minmax(0, .4fr) repeat(2, minmax(0, 1fr)); }
+      .person { min-height: 62px; }
+      .entry-grid { gap: 10px; }
+      .entry-grid .field input { min-height: 64px; }
+    }
+    @media (orientation: landscape) and (max-height: 550px) {
+      .app-header { padding-top: 8px; padding-bottom: 8px; }
+      main { padding-top: 8px; }
+      section { margin-bottom: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <!-- <div class="eyebrow">F5L</div> -->
+      <h1>Colector F5L</h1>
+    </div>
+  </header>
+
+  <p id="storageError" class="storage-error hidden" role="alert"></p>
+
+  <main id="appMain" inert aria-busy="true">
+    <section id="pilotsSection">
+      <div class="section-head">
+        <!-- <div>
+          <h2>Seleccionar piloto</h2>
+          <div class="subtle">Pulsar sobre un piloto para ingresar un vuelo</div>
+        </div> -->
+        <div class="pilot-actions" style="margin: 0 auto;">
+          <button id="importPilots" class="small-button" type="button">Importar pilotos</button>
+          <button id="toggleAddPilot" class="small-button" type="button" aria-expanded="false">+ Agregar piloto</button>
+        </div>
+      </div>
+      <input id="pilotCsvFile" class="hidden" type="file" accept=".csv,text/csv">
+      <div id="addPilotPanel" class="panel hidden" style="margin-top:12px; margin-bottom:12px">
+        <h3 style="margin-bottom:10px">Agregar piloto</h3>
+        <div class="add-person-row">
+          <input id="newPilotCode" inputmode="numeric" maxlength="8" placeholder="ID de piloto" aria-label="ID de piloto">
+          <input id="newPilotLast" autocomplete="off" placeholder="Apellido" aria-label="Apellido">
+          <input id="newPilotFirst" autocomplete="off" placeholder="Nombre" aria-label="Nombre">
+          <button id="addPilotBtn" class="primary" type="button">Agregar piloto</button>
+        </div>
+      </div>
+      <div id="personList" class="person-list" aria-label="Pilot list"></div>
+    </section>
+
+    <section id="entrySection" class="panel hidden">
+      <div class="section-head">
+        <h2>Datos de vuelo</h2>
+        <button id="changePilot" class="small-button" type="button">Cambiar piloto</button>
+      </div>
+      <div class="entry-top">
+        <div id="selectedPilotName" class="code-name">Seleccionar piloto</div>
+        <div id="selectedPilotNumber" class="pilot-number"></div>
+      </div>
+      <form id="entryForm">
+        <div class="entry-grid">
+          <div class="field">
+            <label for="roundNumber">Ronda</label>
+            <input id="roundNumber" type="number" min="1" max="99" step="1" inputmode="numeric" value="1" required>
+          </div>
+          <div class="field">
+            <label for="groupNumber">Grupo</label>
+            <input id="groupNumber" type="number" min="1" max="99" step="1" inputmode="numeric" value="1" required>
+          </div>
+          <div class="field">
+            <label>Vuelo (m:s)</label>
+            <div class="flight-inputs">
+              <input id="flightMinutes" type="number" min="0" max="99" step="1" inputmode="numeric" value="6" aria-label="Flight minutes" required>
+              <span class="colon">:</span>
+              <input id="flightSeconds" type="number" min="0" max="59" step="1" inputmode="numeric" value="30" aria-label="Flight seconds" required>
+            </div>
+          </div>
+          <div class="field">
+            <label>Aterrizaje (m:cm)</label>
+            <div class="flight-inputs">
+              <input id="landingMeters" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Landing distance meters" required>
+              <span class="colon">,</span>
+              <input id="landingCentimeters" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Landing distance centimeters" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="penaltyPoints">Penalizaciones</label>
+            <input id="penaltyPoints" type="number" min="0" step="1" inputmode="numeric" value="0" required>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" type="submit">REGISTRAR VUELO</button>
+          <button id="clearEntry" type="button">Limpiar</button>
+        </div>
+        <div id="entryStatus" class="status" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="records-head">
+        <div class="footer-actions">
+          <button id="exportCsv" class="primary small-button" type="button">Exportar</button>
+          <button id="clearRecords" class="small-button" type="button">Limpiar</button>
+        </div>
+      </div>
+      <div style="margin-top: 12px; margin-bottom: 12px;">
+        <div>
+          <h2 style="margin-bottom:3px">Registros</h2>
+          <div id="recordCount" class="subtle">0 reg</div>
+        </div>
+      </div>
+      <div id="recordsList"><p class="subtle">No se han registrado vuelos aún.</p></div>
+      <!-- <p class="note">Landing distance is rounded up to the F5L table: 0.2 m steps through 2 m, then 1 m steps. CSV layout is provisional.</p> -->
+    </section>
+  </main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const LEGACY_STORAGE_KEY = 'f5l-collector-visibility-v1';
+  const DATABASE_NAME = 'f5l-collector';
+  const DATABASE_VERSION = 1;
+  const STATE_STORE = 'appState';
+  const STATE_KEY = 'state';
+  const defaultPilots = [
+    { code: '01', last: 'PEREZ', first: 'Juan' },
+    { code: '02', last: 'GOMEZ', first: 'Martin' },
+    { code: '03', last: 'RODRIGUEZ', first: 'Ana' },
+    { code: '04', last: 'LOPEZ', first: 'Carlos' },
+    { code: '05', last: 'FERNANDEZ', first: 'Sofia' }
+  ];
+  let state = { pilots: defaultPilots, records: [], selectedCode: null, gsRows: null };
+  let database;
+  let writeQueue = Promise.resolve();
+  let storageNotice = '';
+
+  function openDatabase() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        reject(new Error('IndexedDB no está disponible en este navegador.'));
+        return;
+      }
+      const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(STATE_STORE)) db.createObjectStore(STATE_STORE);
+      };
+      request.onsuccess = () => {
+        database = request.result;
+        database.onversionchange = () => database.close();
+        resolve(database);
+      };
+      request.onerror = () => reject(request.error || new Error('No se pudo abrir la base de datos.'));
+      request.onblocked = () => reject(new Error('La base de datos está bloqueada por otra pestaña abierta.'));
+    });
+  }
+  function readState(db) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STATE_STORE, 'readonly');
+      const request = transaction.objectStore(STATE_STORE).get(STATE_KEY);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('No se pudo leer la base de datos.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Se canceló la lectura de datos.'));
+    });
+  }
+  function writeState(db, value) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STATE_STORE, 'readwrite');
+      transaction.objectStore(STATE_STORE).put(value, STATE_KEY);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudieron guardar los datos.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Se canceló el guardado de datos.'));
+    });
+  }
+  function isValidState(value) {
+    return value !== null
+      && typeof value === 'object'
+      && Array.isArray(value.pilots)
+      && value.pilots.every(p => p && typeof p.code === 'string' && typeof p.last === 'string' && typeof p.first === 'string')
+      && Array.isArray(value.records)
+      && value.records.every(record => record && typeof record === 'object')
+      && (value.gsRows == null || (Array.isArray(value.gsRows) && value.gsRows.every(row => Array.isArray(row) && row.length === 15)))
+      && (value.selectedCode == null || typeof value.selectedCode === 'string');
+  }
+  async function initializeStorage() {
+    const db = await openDatabase();
+    const saved = await readState(db);
+    if (saved !== undefined) {
+      if (!isValidState(saved)) throw new Error('Los datos guardados en IndexedDB no tienen un formato válido.');
+      state = { ...saved, gsRows: saved.gsRows || null };
+      return;
+    }
+
+    const legacyValue = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyValue !== null) {
+      let migratedState;
+      try {
+        migratedState = JSON.parse(legacyValue);
+      } catch (error) {
+        throw new Error(`No se pudieron interpretar los datos anteriores: ${error.message}`);
+      }
+      if (!isValidState(migratedState)) throw new Error('Los datos anteriores no tienen un formato válido; se conservaron sin cambios.');
+      state = { ...migratedState, gsRows: migratedState.gsRows || null };
+      await writeState(db, state);
+      try {
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      } catch (error) {
+        storageNotice = `Los datos se migraron, pero no se pudo borrar la copia anterior: ${error.message}`;
+      }
+      return;
+    }
+
+    await writeState(db, state);
+  }
+  function persist() {
+    const snapshot = JSON.parse(JSON.stringify(state));
+    const save = writeQueue.then(() => writeState(database, snapshot));
+    writeQueue = save.catch(() => {});
+    return save;
+  }
+  function saveState() {
+    persist().then(() => {
+      $('storageError').classList.add('hidden');
+      $('storageError').textContent = '';
+    }).catch(error => {
+      showStorageError(`No se pudieron guardar los cambios en este dispositivo: ${error.message}`);
+    });
+  }
+  function showStorageError(message) {
+    $('storageError').textContent = message;
+    $('storageError').classList.remove('hidden');
+  }
+  function parseSemicolonCsv(text) {
+    const rows = [];
+    let row = [];
+    let cell = '';
+    let quoted = false;
+    const source = text.replace(/^\uFEFF/, '');
+    for (let i = 0; i < source.length; i++) {
+      const char = source[i];
+      if (quoted) {
+        if (char === '"' && source[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else if (char === '"') {
+          quoted = false;
+        } else {
+          cell += char;
+        }
+      } else if (char === '"' && cell.length === 0) {
+        quoted = true;
+      } else if (char === ';') {
+        row.push(cell);
+        cell = '';
+      } else if (char === '\n' || char === '\r') {
+        if (char === '\r' && source[i + 1] === '\n') i++;
+        row.push(cell);
+        if (row.some(value => value !== '')) rows.push(row);
+        row = [];
+        cell = '';
+      } else {
+        cell += char;
+      }
+    }
+    if (quoted) throw new Error('El archivo tiene comillas sin cerrar.');
+    row.push(cell);
+    if (row.some(value => value !== '')) rows.push(row);
+    return rows;
+  }
+  function parseGliderScoreTemplate(text) {
+    const rows = parseSemicolonCsv(text);
+    const expectedHeaders = ['CompNo','TaskNo','RoundNo','GroupNo','ReFlightNo','PilotNo','Data1','Data2','Data3','Data4','Data5','Data6','Data7','Penalty','Name'];
+    if (!rows.length || rows[0].length !== expectedHeaders.length
+      || rows[0].some((value, index) => value.trim() !== expectedHeaders[index])) {
+      throw new Error(`El encabezado no coincide con el formato GS esperado: ${expectedHeaders.join(';')}`);
+    }
+    if (rows.length < 2) throw new Error('El archivo no contiene filas de competencia.');
+
+    const numericField = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
+    const keySet = new Set();
+    const pilotMap = new Map();
+    const templateRows = rows.slice(1).map((values, index) => {
+      if (values.length !== expectedHeaders.length) {
+        throw new Error(`La fila ${index + 2} tiene ${values.length} campos; se esperaban ${expectedHeaders.length}.`);
+      }
+      const fields = values.slice(0, 14);
+      if (fields.some(value => !numericField.test(value.trim()))) {
+        throw new Error(`La fila ${index + 2} contiene un valor no numérico en los campos de puntuación.`);
+      }
+      const pilotNo = Number(values[5]);
+      if (!Number.isSafeInteger(pilotNo) || pilotNo < 1) {
+        throw new Error(`La fila ${index + 2} tiene un PilotNo que no es un entero positivo.`);
+      }
+      const key = values.slice(0, 6).map(value => value.trim()).join('|');
+      if (keySet.has(key)) throw new Error(`La fila ${index + 2} duplica una clave de puntuación del archivo.`);
+      keySet.add(key);
+
+      const name = values[14].trim();
+      if (!name) throw new Error(`La fila ${index + 2} no tiene nombre de piloto.`);
+      const pilotKey = String(pilotNo);
+      const existingPilot = pilotMap.get(pilotKey);
+      if (existingPilot && existingPilot.name !== name) {
+        throw new Error(`El PilotNo ${pilotKey} aparece con más de un nombre.`);
+      }
+      if (!existingPilot) pilotMap.set(pilotKey, { code: pilotKey, last: '', first: '', name });
+
+      const cleanRow = values.map(value => value.trim());
+      cleanRow.splice(6, 8, '0', '0', '0', '0', '0', '0', '0', '0');
+      return cleanRow;
+    });
+    if (!templateRows.length) throw new Error('El archivo no contiene filas de competencia.');
+    return {
+      pilots: [...pilotMap.values()].sort((a, b) => Number(a.code) - Number(b.code)),
+      records: [],
+      selectedCode: null,
+      gsRows: templateRows
+    };
+  }
+  async function importGliderScoreFile(file) {
+    const importedState = parseGliderScoreTemplate(await file.text());
+    const save = writeQueue.then(() => writeState(database, importedState));
+    writeQueue = save.catch(() => {});
+    await save;
+    state = importedState;
+    renderPilots();
+    renderRecords();
+    $('entrySection').classList.add('hidden');
+    $('storageError').classList.add('hidden');
+    $('storageError').textContent = '';
+  }
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+  function pilotDisplayName(p) { return p.name || `${p.last}, ${p.first}`; }
+  function pilotLabel(p) { return `${p.code}: ${p.last}, ${p.first}`; }
+  function getSelectedPilot() { return state.pilots.find(p => p.code === state.selectedCode); }
+  function getLandingTableDistance(meters, centimeters) {
+    const measuredCentimeters = meters * 100 + centimeters;
+    if (measuredCentimeters > 1500) return 0;
+    const stepCentimeters = measuredCentimeters <= 200 ? 20 : 100;
+    return Math.max(stepCentimeters, Math.ceil(measuredCentimeters / stepCentimeters) * stepCentimeters);
+  }
+  function formatLandingData(meters, centimeters) {
+    if (meters === 0 && centimeters === 0) return '0';
+    return String(getLandingTableDistance(meters, centimeters));
+  }
+
+  function renderPilots() {
+    const list = $('personList');
+    list.innerHTML = '';
+    state.pilots.forEach(p => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'person';
+      btn.setAttribute('aria-pressed', String(p.code === state.selectedCode));
+      btn.innerHTML = `<span class="person-code">${escapeHtml(p.code)}</span><span class="person-name">${escapeHtml(pilotDisplayName(p))}</span>`;
+      btn.addEventListener('click', () => selectPilot(p.code));
+      list.appendChild(btn);
+    });
+  }
+  function selectPilot(code) {
+    state.selectedCode = code;
+    saveState();
+    const p = getSelectedPilot();
+    $('entrySection').classList.toggle('hidden', !p);
+    if (p) {
+      $('selectedPilotName').textContent = `(${p.code}) ${pilotDisplayName(p)}`;
+      /* $('selectedPilotNumber').textContent = `ID: ${p.code}`; */
+      $('entryStatus').textContent = '';
+      $('entrySection').scrollIntoView({ behavior: 'auto', block: 'start' });
+    }
+    renderPilots();
+  }
+  function setStatus(msg) { $('entryStatus').textContent = msg; }
+  function renderRecords() {
+    $('recordCount').textContent = `${state.records.length} ${state.records.length === 1 ? 'vuelo' : 'vuelos'}`;
+    const host = $('recordsList');
+    if (!state.records.length) {
+      host.innerHTML = '<p class="subtle">Aún no hay registros guardados.</p>';
+      return;
+    }
+    host.innerHTML = '';
+    const records = state.records
+      .map((record, index) => ({ record, index }))
+      .sort((a, b) => Number(a.record.round) - Number(b.record.round)
+        || Number(a.record.group) - Number(b.record.group)
+        || b.index - a.index);
+    let previousRound = null;
+    let previousGroup = null;
+    records.forEach(({ record: r }) => {
+      if (Number(r.round) !== previousRound) {
+        const roundHeading = document.createElement('h3');
+        roundHeading.className = 'record-round-heading';
+        roundHeading.textContent = `Ronda ${r.round}`;
+        host.appendChild(roundHeading);
+        previousRound = Number(r.round);
+        previousGroup = null;
+      }
+      if (Number(r.group) !== previousGroup) {
+        const groupHeading = document.createElement('h4');
+        groupHeading.className = 'record-group-heading';
+        groupHeading.textContent = `Grupo ${r.group}`;
+        host.appendChild(groupHeading);
+        previousGroup = Number(r.group);
+      }
+      const row = document.createElement('div');
+      row.className = 'record-row';
+      const time = `${String(r.flightMinutes).padStart(2,'0')}:${String(r.flightSeconds).padStart(2,'0')}`;
+      const landingDistance = Number.isFinite(r.landingMeters) && Number.isFinite(r.landingCentimeters)
+        ? getLandingTableDistance(r.landingMeters, r.landingCentimeters) / 100
+        : NaN;
+      const landing = Number.isFinite(landingDistance)
+        ? `${r.landingMeters} m ${String(r.landingCentimeters).padStart(2, '0')} cm → ${landingDistance.toFixed(1)} m`
+        : 'Aterrizaje Legacy';
+      const name = r.pilotName || `${r.lastName}, ${r.firstName}`;
+      row.innerHTML = `<span>${escapeHtml(r.pilotCode)} ${escapeHtml(name)} · R${escapeHtml(r.round)} G${escapeHtml(r.group)} · ${time}</span><span>A ${escapeHtml(landing)} / P ${escapeHtml(r.penalty)}</span>`;
+      host.appendChild(row);
+    });
+  }
+
+  $('toggleAddPilot').addEventListener('click', () => {
+    const panel = $('addPilotPanel');
+    const open = panel.classList.toggle('hidden') === false;
+    $('toggleAddPilot').textContent = open ? 'Cancelar' : '+ Agregar piloto';
+    $('toggleAddPilot').setAttribute('aria-expanded', String(open));
+    if (open) $('newPilotCode').focus();
+  });
+  $('importPilots').addEventListener('click', () => {
+    if (!confirm('Atención!: los registros temporales en este teléfono se perderán, desea continuar?')) return;
+    $('pilotCsvFile').value = '';
+    $('pilotCsvFile').click();
+  });
+  $('pilotCsvFile').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    $('appMain').inert = true;
+    $('appMain').setAttribute('aria-busy', 'true');
+    try {
+      await importGliderScoreFile(file);
+    } catch (error) {
+      showStorageError(`No se pudo importar el CSV de GliderScore: ${error.message}`);
+    } finally {
+      $('appMain').inert = false;
+      $('appMain').setAttribute('aria-busy', 'false');
+      $('pilotCsvFile').value = '';
+    }
+  });
+  $('addPilotBtn').addEventListener('click', () => {
+    const code = $('newPilotCode').value.trim();
+    const last = $('newPilotLast').value.trim();
+    const first = $('newPilotFirst').value.trim();
+    if (!code || !last || !first) { alert('Ingresar ID, apellido y nombre.'); return; }
+    if (state.pilots.some(p => p.code.toLowerCase() === code.toLowerCase())) { alert('El ID ya existe.'); return; }
+    state.pilots.push({ code, last, first });
+    state.pilots.sort((a,b) => a.code.localeCompare(b.code, undefined, {numeric:true}));
+    saveState(); renderPilots();
+    $('newPilotCode').value = ''; $('newPilotLast').value = ''; $('newPilotFirst').value = '';
+    $('addPilotPanel').classList.add('hidden');
+    $('toggleAddPilot').textContent = '+ Agregar piloto';
+    $('toggleAddPilot').setAttribute('aria-expanded', 'false');
+  });
+  $('changePilot').addEventListener('click', () => {
+    $('entrySection').classList.add('hidden');
+    $('pilotsSection').scrollIntoView({ behavior: 'auto', block: 'start' });
+  });
+  $('clearEntry').addEventListener('click', () => {
+    $('roundNumber').value = '1'; $('groupNumber').value = '1';
+    $('flightMinutes').value = '6'; $('flightSeconds').value = '30';
+    $('landingMeters').value = '0'; $('landingCentimeters').value = '0'; $('penaltyPoints').value = '0';
+    setStatus('Valores reseteados.');
+  });
+  $('entryForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const p = getSelectedPilot();
+    if (!p) { setStatus('Seleccionar un piloto primero.'); return; }
+    const record = {
+      pilotCode: p.code, lastName: p.last, firstName: p.first,
+      pilotName: pilotDisplayName(p),
+      round: Number($('roundNumber').value),
+      group: Number($('groupNumber').value),
+      flightMinutes: Number($('flightMinutes').value),
+      flightSeconds: Number($('flightSeconds').value),
+      landingMeters: Number($('landingMeters').value),
+      landingCentimeters: Number($('landingCentimeters').value),
+      penalty: Number($('penaltyPoints').value)
+    };
+    if (record.flightSeconds < 0 || record.flightSeconds > 59) { setStatus('Los segundos deben estar entre 0 y 59.'); return; }
+    if (record.round < 1) { setStatus('El número de ronda debe ser al menos 1.'); return; }
+    if (record.landingMeters < 0 || record.landingCentimeters < 0 || record.landingCentimeters > 99) {
+      setStatus('La distancia de aterrizaje debe usar metros no negativos y 0 a 99 centímetros.');
+      return;
+    }
+    if (state.gsRows) {
+      const matchingRows = state.gsRows.filter(row => Number(row[4]) === 0
+        && Number(row[5]) === Number(p.code)
+        && Number(row[2]) === record.round
+        && Number(row[3]) === record.group);
+      if (matchingRows.length !== 1) {
+        setStatus(matchingRows.length
+          ? 'La combinación de piloto, ronda y grupo no es correcta.'
+          : 'La combinación de piloto, ronda y grupo no es correcta.');
+        return;
+      }
+      record.gsKey = matchingRows[0].slice(0, 6);
+    }
+    record.landingDistance = getLandingTableDistance(record.landingMeters, record.landingCentimeters);
+    const existingIndex = state.records.findIndex(existing => existing.gsKey && record.gsKey
+      ? existing.gsKey.join('|') === record.gsKey.join('|')
+      : existing.pilotCode === record.pilotCode && existing.round === record.round && existing.group === record.group);
+    if (existingIndex < 0) state.records.push(record);
+    else state.records[existingIndex] = record;
+    saveState(); renderRecords();
+    setStatus(`Saved: ${p.code} · Round ${record.round}, Group ${record.group}.`);
+    const nextRound = record.round;
+    $('roundNumber').value = String(nextRound);
+    $('landingMeters').value = '0'; $('landingCentimeters').value = '0'; $('penaltyPoints').value = '0';
+    $('flightMinutes').value = '6'; $('flightSeconds').value = '30';
+  });
+  $('exportCsv').addEventListener('click', () => {
+    if (!Array.isArray(state.gsRows) || !state.gsRows.length) {
+      alert('Primero importe el CSV base de la competencia desde GliderScore.');
+      return;
+    }
+    if (state.records.some(r => !Number.isFinite(r.landingDistance))) {
+      alert('Algunos vuelos guardados utilizan el formato de aterrizaje anterior. Limpie o vuelva a ingresar esas entradas antes de exportar.');
+      return;
+    }
+    const invalidPilot = state.records.find(r => !/^\d+$/.test(String(r.pilotCode)) || !Number.isSafeInteger(Number(r.pilotCode)) || Number(r.pilotCode) < 1);
+    if (invalidPilot) {
+      alert(`El ID de piloto "${invalidPilot.pilotCode}" no es un número entero positivo válido para GliderScore.`);
+      return;
+    }
+    const headers = ['CompNo','TaskNo','RoundNo','GroupNo','ReFlightNo','PilotNo','Data1','Data2','Data3','Data4','Data5','Data6','Data7','Penalty','Name'];
+    const csvCell = value => {
+      const s = String(value ?? '');
+      return /[;"\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const recordsByKey = new Map(state.records.filter(r => Array.isArray(r.gsKey))
+      .map(r => [r.gsKey.join('|'), r]));
+    const lines = [headers.join(';')];
+    state.gsRows.forEach(templateRow => {
+      const r = recordsByKey.get(templateRow.slice(0, 6).join('|'));
+      const values = [...templateRow];
+      if (r) {
+        const flightTime = Number(`${r.flightMinutes}${String(r.flightSeconds).padStart(2, '0')}`);
+        const landing = formatLandingData(r.landingMeters, r.landingCentimeters);
+        values.splice(6, 8, '0', flightTime, '0', '0', '0', '0', landing, String(r.penalty));
+      }
+      lines.push(values.map(csvCell).join(';'));
+    });
+    const blob = new Blob([lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'f5l-contest-flights.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  $('clearRecords').addEventListener('click', () => {
+    if (!confirm('Borrar todos los vuelos guardados? Esto no se puede deshacer!.')) return;
+    state.records = []; saveState(); renderRecords();
+  });
+
+  initializeStorage().then(() => {
+    renderPilots();
+    renderRecords();
+    if (state.selectedCode && getSelectedPilot()) {
+      $('selectedPilotName').textContent = `${getSelectedPilot().code} ${pilotDisplayName(getSelectedPilot())}`;
+      /* $('selectedPilotNumber').textContent = `ID: ${getSelectedPilot().code}`; */
+      $('entrySection').classList.remove('hidden');
+    }
+    if (storageNotice) showStorageError(storageNotice);
+    $('appMain').inert = false;
+    $('appMain').setAttribute('aria-busy', 'false');
+  }).catch(error => {
+    showStorageError(`No se pudo iniciar el almacenamiento local: ${error.message} Recargue la página para volver a intentarlo.`);
+  });
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(error => {
+        showStorageError(`No se pudo habilitar el funcionamiento sin conexión: ${error.message}`);
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
