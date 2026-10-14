@@ -1,6 +1,6 @@
 const CACHE_NAME = 'f5l-collector-v1';
 const APP_SHELL = [
-  './f5l_collector.html',
+  './index.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'
