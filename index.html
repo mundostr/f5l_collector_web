@@ -150,7 +150,7 @@
             <input id="groupNumber" type="number" min="1" max="99" step="1" inputmode="numeric" value="1" required>
           </div>
           <div class="field">
-            <label>Vuelo (m:s)</label>
+            <label>Vuelo (min:seg)</label>
             <div class="flight-inputs">
               <input id="flightMinutes" type="number" min="0" max="99" step="1" inputmode="numeric" value="6" aria-label="Flight minutes" required>
               <span class="colon">:</span>
@@ -158,12 +158,33 @@
             </div>
           </div>
           <div class="field">
-            <label>Aterrizaje (m:cm)</label>
-            <div class="flight-inputs">
-              <input id="landingMeters" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Landing distance meters" required>
-              <span class="colon">,</span>
-              <input id="landingCentimeters" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Landing distance centimeters" required>
-            </div>
+            <label for="landingDistance">Aterrizaje (mts)</label>
+            <select id="landingDistance" style="font-size: 240% !important;" required>
+              <option value="20" selected>0,2</option>
+              <option value="40">0,4</option>
+              <option value="60">0,6</option>
+              <option value="80">0,8</option>
+              <option value="100">1,0</option>
+              <option value="120">1,2</option>
+              <option value="140">1,4</option>
+              <option value="160">1,6</option>
+              <option value="180">1,8</option>
+              <option value="200">2,0</option>
+              <option value="300">3,0</option>
+              <option value="400">4,0</option>
+              <option value="500">5,0</option>
+              <option value="600">6,0</option>
+              <option value="700">7,0</option>
+              <option value="800">8,0</option>
+              <option value="900">9,0</option>
+              <option value="1000">10,0</option>
+              <option value="1100">11,0</option>
+              <option value="1200">12,0</option>
+              <option value="1300">13,0</option>
+              <option value="1400">14,0</option>
+              <option value="1500">15,0</option>
+              <option value="outside">+15</option>
+            </select>
           </div>
           <div class="field">
             <label for="penaltyPoints">Penalizaciones</label>
@@ -426,6 +447,14 @@
     if (meters === 0 && centimeters === 0) return '0';
     return String(getLandingTableDistance(meters, centimeters));
   }
+  function getLandingDataValue(choice) {
+    if (choice === 'outside') return 0;
+    const distanceCentimeters = Number(choice);
+    if (![20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500].includes(distanceCentimeters)) {
+      throw new Error('La distancia de aterrizaje seleccionada no es válida.');
+    }
+    return distanceCentimeters;
+  }
 
   function renderPilots() {
     const list = $('personList');
@@ -488,12 +517,15 @@
       const row = document.createElement('div');
       row.className = 'record-row';
       const time = `${String(r.flightMinutes).padStart(2,'0')}:${String(r.flightSeconds).padStart(2,'0')}`;
-      const landingDistance = Number.isFinite(r.landingMeters) && Number.isFinite(r.landingCentimeters)
-        ? getLandingTableDistance(r.landingMeters, r.landingCentimeters) / 100
-        : NaN;
-      const landing = Number.isFinite(landingDistance)
-        ? `${r.landingMeters} m ${String(r.landingCentimeters).padStart(2, '0')} cm → ${landingDistance.toFixed(1)} m`
-        : 'Aterrizaje Legacy';
+      const landing = r.landingChoice
+        ? r.landingChoice === 'outside'
+          ? 'Fuera de 15 m'
+          : `${(Number(r.landingChoice) / 100).toFixed(1).replace('.', ',')} m`
+        : r.landingLabel
+          ? r.landingLabel.replace(/\s+—\s+\d+\s+puntos$/, '')
+          : Number.isFinite(r.landingMeters) && Number.isFinite(r.landingCentimeters)
+            ? `${r.landingMeters} m ${String(r.landingCentimeters).padStart(2, '0')} cm → ${(getLandingTableDistance(r.landingMeters, r.landingCentimeters) / 100).toFixed(1)} m`
+            : 'Aterrizaje Legacy';
       const name = r.pilotName || `${r.lastName}, ${r.firstName}`;
       row.innerHTML = `<span>${escapeHtml(r.pilotCode)} ${escapeHtml(name)} · R${escapeHtml(r.round)} G${escapeHtml(r.group)} · ${time}</span><span>A ${escapeHtml(landing)} / P ${escapeHtml(r.penalty)}</span>`;
       host.appendChild(row);
@@ -548,7 +580,7 @@
   $('clearEntry').addEventListener('click', () => {
     $('roundNumber').value = '1'; $('groupNumber').value = '1';
     $('flightMinutes').value = '6'; $('flightSeconds').value = '30';
-    $('landingMeters').value = '0'; $('landingCentimeters').value = '0'; $('penaltyPoints').value = '0';
+    $('landingDistance').value = '20'; $('penaltyPoints').value = '0';
     setStatus('Valores reseteados.');
   });
   $('entryForm').addEventListener('submit', ev => {
@@ -562,14 +594,18 @@
       group: Number($('groupNumber').value),
       flightMinutes: Number($('flightMinutes').value),
       flightSeconds: Number($('flightSeconds').value),
-      landingMeters: Number($('landingMeters').value),
-      landingCentimeters: Number($('landingCentimeters').value),
+      landingChoice: $('landingDistance').value,
+      landingLabel: $('landingDistance').value === 'outside'
+        ? 'Fuera de 15 m'
+        : `${(Number($('landingDistance').value) / 100).toFixed(1).replace('.', ',')} m`,
       penalty: Number($('penaltyPoints').value)
     };
     if (record.flightSeconds < 0 || record.flightSeconds > 59) { setStatus('Los segundos deben estar entre 0 y 59.'); return; }
     if (record.round < 1) { setStatus('El número de ronda debe ser al menos 1.'); return; }
-    if (record.landingMeters < 0 || record.landingCentimeters < 0 || record.landingCentimeters > 99) {
-      setStatus('La distancia de aterrizaje debe usar metros no negativos y 0 a 99 centímetros.');
+    try {
+      record.landingDistance = getLandingDataValue(record.landingChoice);
+    } catch (error) {
+      setStatus(error.message);
       return;
     }
     if (state.gsRows) {
@@ -585,7 +621,6 @@
       }
       record.gsKey = matchingRows[0].slice(0, 6);
     }
-    record.landingDistance = getLandingTableDistance(record.landingMeters, record.landingCentimeters);
     const existingIndex = state.records.findIndex(existing => existing.gsKey && record.gsKey
       ? existing.gsKey.join('|') === record.gsKey.join('|')
       : existing.pilotCode === record.pilotCode && existing.round === record.round && existing.group === record.group);
@@ -595,7 +630,7 @@
     setStatus(`Saved: ${p.code} · Round ${record.round}, Group ${record.group}.`);
     const nextRound = record.round;
     $('roundNumber').value = String(nextRound);
-    $('landingMeters').value = '0'; $('landingCentimeters').value = '0'; $('penaltyPoints').value = '0';
+    $('landingDistance').value = '20'; $('penaltyPoints').value = '0';
     $('flightMinutes').value = '6'; $('flightSeconds').value = '30';
   });
   $('exportCsv').addEventListener('click', () => {
@@ -625,7 +660,9 @@
       const values = [...templateRow];
       if (r) {
         const flightTime = Number(`${r.flightMinutes}${String(r.flightSeconds).padStart(2, '0')}`);
-        const landing = formatLandingData(r.landingMeters, r.landingCentimeters);
+        const landing = r.landingChoice
+          ? String(getLandingDataValue(r.landingChoice))
+          : formatLandingData(r.landingMeters, r.landingCentimeters);
         values.splice(6, 8, '0', flightTime, '0', '0', '0', '0', landing, String(r.penalty));
       }
       lines.push(values.map(csvCell).join(';'));

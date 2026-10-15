@@ -1,4 +1,4 @@
-const CACHE_NAME = 'f5l-collector-v1';
+const CACHE_NAME = 'f5l-collector-v4';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
@@ -35,7 +35,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
           return response;
         })
-        .catch(async () => (await caches.match(request)) || caches.match('./f5l_collector.html'))
+        .catch(async () => (await caches.match(request)) || caches.match('./index.html'))
     );
     return;
   }
