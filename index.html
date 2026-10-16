@@ -29,9 +29,10 @@
     html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); }
     body { font-size: 18px; line-height: 1.25; }
     button, input, select { font: inherit; color: var(--fg); }
-    button { min-height: var(--control-h); border: 3px solid #000; border-radius: 8px; background: #fff; font-weight: 800; padding: 10px 14px; cursor: pointer; }
+    button { min-height: var(--control-h); border: 2px solid #000; border-radius: 8px; background: #fff; font-weight: 800; padding: 10px 14px; cursor: pointer; }
     button:focus-visible, input:focus-visible, select:focus-visible { outline: 4px solid #0877ff; outline-offset: 2px; }
-    input, select { width: 100%; min-height: var(--control-h); border: 3px solid #111; border-radius: 7px; background: #fff; padding: 8px 10px; font-size: 22px; font-weight: 700; }
+    input, select { width: 100%; min-height: var(--control-h); border: 2px solid #111; border-radius: 7px; background: #fff; padding: 8px 10px; font-size: 22px; font-weight: 700; }
+    select { padding-bottom: 12px; }
     input[type="number"] { font-size: 40px !important; text-align: center; }
     label { display: block; font-weight: 800; font-size: 16px; margin: 0 0 6px; }
     h1, h2, h3, p { margin: 0; }
@@ -161,7 +162,7 @@
           </div>
           <div class="field">
             <label for="landingDistance">Aterrizaje (mts)</label>
-            <select id="landingDistance" style="font-size: 230% !important; text-align: right;" required>
+            <select id="landingDistance" style="font-size: 40px !important; text-align: right; width: 50%;" required>
               <option value="20" selected>0,2</option>
               <option value="40">0,4</option>
               <option value="60">0,6</option>
@@ -598,7 +599,7 @@
       flightSeconds: Number($('flightSeconds').value),
       landingChoice: $('landingDistance').value,
       landingLabel: $('landingDistance').value === 'outside'
-        ? 'Fuera de 15 m'
+        ? '+15m'
         : `${(Number($('landingDistance').value) / 100).toFixed(1).replace('.', ',')} m`,
       penalty: Number($('penaltyPoints').value)
     };
@@ -725,7 +726,8 @@
           await registration.update();
           showUpdateButton();
         } catch (error) {
-          showStorageError(`No se pudo buscar una actualización: ${error.message}`);
+          // showStorageError(`No se pudo buscar una actualización: ${error.message}`);
+          showStorageError(`No se pudo buscar una actualización`);
         }
       };
 
