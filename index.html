@@ -82,6 +82,7 @@
     @media (max-width: 520px) {
       :root { --pad: 10px; --control-h: 54px; }
       .app-header { align-items: flex-start; }
+      .app-header #updateApp { flex: 1 0 100%; }
       .contest-fields { grid-template-columns: 1fr 1fr; gap: 9px; }
       .add-person-row { grid-template-columns: minmax(0, .4fr) repeat(2, minmax(0, 1fr)); }
       .person { min-height: 62px; }
@@ -101,6 +102,7 @@
       <!-- <div class="eyebrow">F5L</div> -->
       <h1>Colector F5L</h1>
     </div>
+    <button id="updateApp" class="small-button hidden" type="button">Actualización disponible</button>
   </header>
 
   <p id="storageError" class="storage-error hidden" role="alert"></p>
@@ -519,7 +521,7 @@
       const time = `${String(r.flightMinutes).padStart(2,'0')}:${String(r.flightSeconds).padStart(2,'0')}`;
       const landing = r.landingChoice
         ? r.landingChoice === 'outside'
-          ? 'Fuera de 15 m'
+          ? '+15'
           : `${(Number(r.landingChoice) / 100).toFixed(1).replace('.', ',')} m`
         : r.landingLabel
           ? r.landingLabel.replace(/\s+—\s+\d+\s+puntos$/, '')
@@ -625,7 +627,14 @@
       ? existing.gsKey.join('|') === record.gsKey.join('|')
       : existing.pilotCode === record.pilotCode && existing.round === record.round && existing.group === record.group);
     if (existingIndex < 0) state.records.push(record);
-    else state.records[existingIndex] = record;
+    else {
+      const shouldUpdate = confirm(`Ya existe un vuelo para el piloto ${p.code}, ronda ${record.round}, grupo ${record.group}. ¿Desea actualizarlo?`);
+      if (!shouldUpdate) {
+        setStatus('Actualización cancelada. No se modificaron los datos.');
+        return;
+      }
+      state.records[existingIndex] = record;
+    }
     saveState(); renderRecords();
     setStatus(`Saved: ${p.code} · Round ${record.round}, Group ${record.group}.`);
     const nextRound = record.round;
@@ -696,7 +705,52 @@
   });
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(error => {
+      let registration;
+      let applyingUpdate = false;
+      const updateButton = $('updateApp');
+      const showUpdateButton = () => {
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          updateButton.classList.remove('hidden');
+        }
+      };
+      const observeInstallingWorker = worker => {
+        if (!worker) return;
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed') showUpdateButton();
+        });
+      };
+      const checkForUpdates = async () => {
+        if (!registration || !navigator.onLine) return;
+        try {
+          await registration.update();
+          showUpdateButton();
+        } catch (error) {
+          showStorageError(`No se pudo buscar una actualización: ${error.message}`);
+        }
+      };
+
+      updateButton.addEventListener('click', () => {
+        const waitingWorker = registration && registration.waiting;
+        if (!waitingWorker) {
+          updateButton.classList.add('hidden');
+          return;
+        }
+        applyingUpdate = true;
+        updateButton.disabled = true;
+        waitingWorker.postMessage({ type: 'ACTIVATE_UPDATE' });
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (applyingUpdate) window.location.reload();
+      });
+      window.addEventListener('online', checkForUpdates);
+
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(async result => {
+        registration = result;
+        registration.addEventListener('updatefound', () => observeInstallingWorker(registration.installing));
+        observeInstallingWorker(registration.installing);
+        showUpdateButton();
+        await checkForUpdates();
+      }).catch(error => {
         showStorageError(`No se pudo habilitar el funcionamiento sin conexión: ${error.message}`);
       });
     });

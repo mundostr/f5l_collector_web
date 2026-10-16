@@ -1,4 +1,4 @@
-const CACHE_NAME = 'f5l-collector-v5';
+const CACHE_NAME = 'f5l-collector-v6';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
@@ -10,8 +10,13 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'ACTIVATE_UPDATE') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', event => {
