@@ -16,6 +16,9 @@ self.addEventListener('install', event => {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'ACTIVATE_UPDATE') {
     self.skipWaiting();
+  } else if (event.data && event.data.type === 'GET_VERSION') {
+    const version = CACHE_NAME.replace(/^f5l-collector-v/, '');
+    event.ports[0]?.postMessage({ version });
   }
 });
 

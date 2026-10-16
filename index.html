@@ -101,7 +101,7 @@
   <header class="app-header">
     <div style="width: 100%;">
       <!-- <div class="eyebrow">F5L</div> -->
-      <h1>Colector F5L</h1>
+      <h1 id="appTitle">Colector F5L</h1>
     </div>
     <div style="width: 100%;">
       <button id="updateApp" class="small-button" type="button" style="width: 100%;">Actualizar</button>
@@ -440,6 +440,12 @@
     return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
   function pilotDisplayName(p) { return p.name || `${p.last}, ${p.first}`; }
+  function pilotListDisplayName(p) {
+    if (!p.name) return `${p.last} ${p.first}`.trim();
+    const nameParts = p.name.trim().split(/\s+/).filter(Boolean);
+    if (nameParts.length < 2) return p.name;
+    return `${nameParts.pop()} ${nameParts.join(' ')}`;
+  }
   function pilotLabel(p) { return `${p.code}: ${p.last}, ${p.first}`; }
   function getSelectedPilot() { return state.pilots.find(p => p.code === state.selectedCode); }
   function getLandingTableDistance(meters, centimeters) {
@@ -469,7 +475,7 @@
       btn.type = 'button';
       btn.className = 'person';
       btn.setAttribute('aria-pressed', String(p.code === state.selectedCode));
-      btn.innerHTML = `<span class="person-code">${escapeHtml(p.code)}</span><span class="person-name">${escapeHtml(pilotDisplayName(p))}</span>`;
+      btn.innerHTML = `<span class="person-code">${escapeHtml(p.code)}</span><span class="person-name">${escapeHtml(pilotListDisplayName(p))}</span>`;
       btn.addEventListener('click', () => selectPilot(p.code));
       list.appendChild(btn);
     });
@@ -711,6 +717,22 @@
       let registration;
       let applyingUpdate = false;
       const updateButton = $('updateApp');
+      const updateVersionLabel = version => {
+        const title = `Colector F5L ${version}`;
+        $('appTitle').textContent = title;
+        document.title = title;
+        document.querySelector('meta[name="apple-mobile-web-app-title"]').content = title;
+      };
+      const requestAppVersion = () => {
+        const worker = navigator.serviceWorker.controller;
+        if (!worker) return;
+        const channel = new MessageChannel();
+        channel.port1.onmessage = event => {
+          if (typeof event.data?.version === 'string') updateVersionLabel(event.data.version);
+          channel.port1.close();
+        };
+        worker.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+      };
       const showUpdateButton = () => {
         if (registration.waiting && navigator.serviceWorker.controller) {
           updateButton.classList.remove('hidden');
@@ -744,6 +766,7 @@
         waitingWorker.postMessage({ type: 'ACTIVATE_UPDATE' });
       });
       navigator.serviceWorker.addEventListener('controllerchange', () => {
+        requestAppVersion();
         if (applyingUpdate) window.location.reload();
       });
       window.addEventListener('online', checkForUpdates);
@@ -752,6 +775,7 @@
         registration = result;
         registration.addEventListener('updatefound', () => observeInstallingWorker(registration.installing));
         observeInstallingWorker(registration.installing);
+        requestAppVersion();
         showUpdateButton();
         await checkForUpdates();
       }).catch(error => {
