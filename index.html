@@ -645,7 +645,7 @@
       state.records[existingIndex] = record;
     }
     saveState(); renderRecords();
-    setStatus(`Saved: ${p.code} · Round ${record.round}, Group ${record.group}.`);
+    setStatus(`Registrado: piloto ${p.code}, ronda ${record.round}, grupo ${record.group}.`);
     const nextRound = record.round;
     $('roundNumber').value = String(nextRound);
     $('landingDistance').value = '20'; $('penaltyPoints').value = '0';
