@@ -1,4 +1,4 @@
-const CACHE_NAME = 'f5l-collector-v7.7';
+const CACHE_NAME = 'f5l-collector-v7.8';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
