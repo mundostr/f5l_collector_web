@@ -758,7 +758,7 @@
     saveState(); renderRecords();
     setStatus(`Registrado: piloto ${p.code}, ronda ${record.round}, grupo ${record.group}.`);
     $('landingDistance').value = '20'; $('penaltyPoints').value = '0';
-    $('flightMinutes').value = '6'; $('flightSeconds').value = '30';
+    $('flightMinutes').value = '0'; $('flightSeconds').value = '00';
   });
   $('exportCsv').addEventListener('click', () => {
     if (!Array.isArray(state.gsRows) || !state.gsRows.length) {
