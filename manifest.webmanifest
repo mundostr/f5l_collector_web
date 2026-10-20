@@ -1,7 +1,7 @@
 {
   "id": "./index.html",
   "name": "Colector F5L",
-  "short_name": "F5L",
+  "short_name": "F5LColector",
   "description": "Registro de vuelos para competencias F5L.",
   "lang": "es",
   "start_url": "./index.html",
