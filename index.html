@@ -48,6 +48,9 @@
     .pilot-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .contest-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .field.full { grid-column: 1 / -1; }
+    .round-selector { display: flex; align-items: center; gap: 10px; }
+    .round-selector label { flex: 0 0 auto; margin: 0; }
+    .round-selector select { flex: 1; min-width: 0; }
     .panel { border: 3px solid #000; border-radius: 10px; padding: 12px; background: var(--panel); }
     .subtle { color: var(--muted); font-size: 16px; font-weight: 700; }
     .person-list { display: grid; gap: 8px; }
@@ -133,6 +136,14 @@
           <button id="addPilotBtn" class="primary" type="button">Agregar piloto</button>
         </div>
       </div>
+    </section>
+
+    <section class="field round-selector">
+      <label for="currentRound">Ronda actual</label>
+      <select id="currentRound" required></select>
+    </section>
+
+    <section>
       <div id="personList" class="person-list" aria-label="Pilot list"></div>
     </section>
 
@@ -148,14 +159,6 @@
       <form id="entryForm">
         <div class="entry-grid">
           <div class="field">
-            <label for="roundNumber">Ronda</label>
-            <input id="roundNumber" type="number" min="1" max="99" step="1" inputmode="numeric" value="1" required>
-          </div>
-          <div class="field">
-            <label for="groupNumber">Grupo</label>
-            <input id="groupNumber" type="number" min="1" max="99" step="1" inputmode="numeric" value="1" required>
-          </div>
-          <div class="field">
             <label>Vuelo (min:seg)</label>
             <div class="flight-inputs">
               <select id="flightMinutes" aria-label="Flight minutes" required>
@@ -168,7 +171,6 @@
                 <option value="6">6</option>
                 <option value="7">7</option>
                 <option value="8">8</option>
-                <option value="9">9</option>
               </select>
               <span class="colon">:</span>
               <select id="flightSeconds" aria-label="Flight seconds" required>
@@ -237,7 +239,7 @@
           </div>
           <div class="field">
             <label for="landingDistance">Aterrizaje (mts)</label>
-            <select id="landingDistance" style="font-size: 40px !important; text-align: center;" required>
+            <select id="landingDistance" style="font-size: 38px !important; text-align: center;" required>
               <option value="20" selected>0,2</option>
               <option value="40">0,4</option>
               <option value="60">0,6</option>
@@ -310,7 +312,7 @@
     { code: '04', last: 'LOPEZ', first: 'Carlos' },
     { code: '05', last: 'FERNANDEZ', first: 'Sofia' }
   ];
-  let state = { pilots: defaultPilots, records: [], selectedCode: null, gsRows: null };
+  let state = { pilots: defaultPilots, records: [], selectedCode: null, currentRound: 1, gsRows: null };
   let database;
   let writeQueue = Promise.resolve();
   let storageNotice = '';
@@ -494,6 +496,7 @@
       pilots: [...pilotMap.values()].sort((a, b) => Number(a.code) - Number(b.code)),
       records: [],
       selectedCode: null,
+      currentRound: getAvailableRounds(templateRows)[0],
       gsRows: templateRows
     };
   }
@@ -503,6 +506,7 @@
     writeQueue = save.catch(() => {});
     await save;
     state = importedState;
+    renderRoundSelector();
     renderPilots();
     renderRecords();
     $('entrySection').classList.add('hidden');
@@ -521,6 +525,40 @@
   }
   function pilotLabel(p) { return `${p.code}: ${p.last}, ${p.first}`; }
   function getSelectedPilot() { return state.pilots.find(p => p.code === state.selectedCode); }
+  function getAvailableRounds(rows = state.gsRows) {
+    if (!Array.isArray(rows)) return [];
+    return [...new Set(rows.map(row => Number(row[2])).filter(round => Number.isSafeInteger(round) && round > 0))]
+      .sort((a, b) => a - b);
+  }
+  function getPilotDrawRow(pilotCode, round) {
+    if (!Array.isArray(state.gsRows)) return null;
+    const matches = state.gsRows.filter(row => Number(row[4]) === 0
+      && Number(row[5]) === Number(pilotCode)
+      && Number(row[2]) === Number(round));
+    return matches.length === 1 ? matches[0] : null;
+  }
+  function renderRoundSelector() {
+    const select = $('currentRound');
+    const rounds = getAvailableRounds();
+    const options = rounds.length ? rounds : [1];
+    if (!options.includes(Number(state.currentRound))) state.currentRound = options[0];
+    select.replaceChildren(...options.map(round => {
+      const option = document.createElement('option');
+      option.value = String(round);
+      option.textContent = String(round);
+      return option;
+    }));
+    select.value = String(state.currentRound);
+    select.disabled = !rounds.length;
+  }
+  function updateSelectedPilotDraw() {
+    const pilot = getSelectedPilot();
+    if (!pilot) return;
+    const row = getPilotDrawRow(pilot.code, state.currentRound);
+    $('selectedPilotNumber').textContent = row
+      ? `Ronda ${state.currentRound} · Grupo ${row[3]}`
+      : 'Sin asignación para esta ronda';
+  }
   function getLandingTableDistance(meters, centimeters) {
     const measuredCentimeters = meters * 100 + centimeters;
     if (measuredCentimeters > 1500) return 0;
@@ -561,6 +599,7 @@
     if (p) {
       $('selectedPilotName').textContent = `(${p.code}) ${pilotDisplayName(p)}`;
       /* $('selectedPilotNumber').textContent = `ID: ${p.code}`; */
+      updateSelectedPilotDraw();
       $('entryStatus').textContent = '';
       $('entrySection').scrollIntoView({ behavior: 'auto', block: 'start' });
     }
@@ -662,10 +701,15 @@
     $('pilotsSection').scrollIntoView({ behavior: 'auto', block: 'start' });
   });
   $('clearEntry').addEventListener('click', () => {
-    $('roundNumber').value = '1'; $('groupNumber').value = '1';
-    $('flightMinutes').value = '6'; $('flightSeconds').value = '30';
+    $('flightMinutes').value = '0'; $('flightSeconds').value = '0';
     $('landingDistance').value = '20'; $('penaltyPoints').value = '0';
     setStatus('Valores reseteados.');
+  });
+  $('currentRound').addEventListener('change', () => {
+    state.currentRound = Number($('currentRound').value);
+    saveState();
+    updateSelectedPilotDraw();
+    $('entryStatus').textContent = '';
   });
   $('entryForm').addEventListener('submit', ev => {
     ev.preventDefault();
@@ -674,8 +718,7 @@
     const record = {
       pilotCode: p.code, lastName: p.last, firstName: p.first,
       pilotName: pilotDisplayName(p),
-      round: Number($('roundNumber').value),
-      group: Number($('groupNumber').value),
+      round: Number($('currentRound').value),
       flightMinutes: Number($('flightMinutes').value),
       flightSeconds: Number($('flightSeconds').value),
       landingChoice: $('landingDistance').value,
@@ -685,26 +728,21 @@
       penalty: Number($('penaltyPoints').value)
     };
     if (record.flightSeconds < 0 || record.flightSeconds > 59) { setStatus('Los segundos deben estar entre 0 y 59.'); return; }
-    if (record.round < 1) { setStatus('El número de ronda debe ser al menos 1.'); return; }
+    const drawRow = getPilotDrawRow(p.code, record.round);
+    if (!drawRow) {
+      setStatus(state.gsRows
+        ? 'El piloto no tiene una asignación única para esta ronda.'
+        : 'Importe primero el CSV base de la competencia para cargar el sorteo.');
+      return;
+    }
+    record.group = Number(drawRow[3]);
     try {
       record.landingDistance = getLandingDataValue(record.landingChoice);
     } catch (error) {
       setStatus(error.message);
       return;
     }
-    if (state.gsRows) {
-      const matchingRows = state.gsRows.filter(row => Number(row[4]) === 0
-        && Number(row[5]) === Number(p.code)
-        && Number(row[2]) === record.round
-        && Number(row[3]) === record.group);
-      if (matchingRows.length !== 1) {
-        setStatus(matchingRows.length
-          ? 'La combinación de piloto, ronda y grupo no es correcta.'
-          : 'La combinación de piloto, ronda y grupo no es correcta.');
-        return;
-      }
-      record.gsKey = matchingRows[0].slice(0, 6);
-    }
+    record.gsKey = drawRow.slice(0, 6);
     const existingIndex = state.records.findIndex(existing => existing.gsKey && record.gsKey
       ? existing.gsKey.join('|') === record.gsKey.join('|')
       : existing.pilotCode === record.pilotCode && existing.round === record.round && existing.group === record.group);
@@ -719,10 +757,8 @@
     }
     saveState(); renderRecords();
     setStatus(`Registrado: piloto ${p.code}, ronda ${record.round}, grupo ${record.group}.`);
-    const nextRound = record.round;
-    $('roundNumber').value = String(nextRound);
     $('landingDistance').value = '20'; $('penaltyPoints').value = '0';
-    $('flightMinutes').value = '6'; $('flightSeconds').value = '30';
+    $('flightMinutes').value = '0'; $('flightSeconds').value = '0';
   });
   $('exportCsv').addEventListener('click', () => {
     if (!Array.isArray(state.gsRows) || !state.gsRows.length) {
@@ -772,11 +808,13 @@
   });
 
   initializeStorage().then(() => {
+    renderRoundSelector();
     renderPilots();
     renderRecords();
     if (state.selectedCode && getSelectedPilot()) {
       $('selectedPilotName').textContent = `${getSelectedPilot().code} ${pilotDisplayName(getSelectedPilot())}`;
       /* $('selectedPilotNumber').textContent = `ID: ${getSelectedPilot().code}`; */
+      updateSelectedPilotDraw();
       $('entrySection').classList.remove('hidden');
     }
     if (storageNotice) showStorageError(storageNotice);
