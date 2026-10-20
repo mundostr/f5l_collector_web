@@ -1,0 +1,33 @@
+name: Email Alert on Main Branch Update
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ://gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }} # Remember to use a Gmail App Password here!
+          
+          subject: "⚠️ Main Branch Updated: ${{ github.repository }}"
+          to: idux.net@gmail.com
+          from: "GitHub Automation <${{ secrets.MAIL_USERNAME }}>"
+          body: |
+            The main branch was updated!
+            
+            Repository: ${{ github.repository }}
+            Updated By: ${{ github.actor }}
+            Commit Message: ${{ github.event.head_commit.message }}
+            See Changes: ${{ github.event.head_commit.url }}
