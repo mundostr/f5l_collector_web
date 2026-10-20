@@ -51,8 +51,9 @@
     .round-selector { display: flex; align-items: center; gap: 10px; }
     .round-selector label { flex: 0 0 auto; margin: 0; }
     .round-selector select { flex: 1; min-width: 0; }
+    .pilot-count { margin-top: -10px; }
     .panel { border: 3px solid #000; border-radius: 10px; padding: 12px; background: var(--panel); }
-    .subtle { color: var(--muted); font-size: 16px; font-weight: 700; }
+    .subtle { color: var(--muted); font-size: 20px; font-weight: 700; margin-top: 16px !important; margin-bottom: 8px !important; }
     .person-list { display: grid; gap: 8px; }
     .person { width: 100%; display: flex; align-items: center; justify-content: flex-start; text-align: left; gap: 12px; min-height: 64px; padding: 10px 12px; }
     .person-code { background: #000; color: #fff; min-width: 64px; text-align: center; padding: 7px 8px; border-radius: 4px; font-size: 22px; }
@@ -77,6 +78,8 @@
     .status { margin-top: 10px; font-weight: 800; min-height: 24px; }
     .storage-error { margin: var(--pad); padding: 10px 12px; border: 3px solid #000; font-weight: 800; }
     .records-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .records-title { display: flex; align-items: baseline; gap: 10px; }
+    .records-title h2, .records-title #recordCount { margin: 0; font-size: 23px; font-weight: 800; }
     .record-round-heading { margin: 18px 0 6px; padding-top: 8px; border-top: 3px solid #000; font-size: 19px; }
     .record-round-heading:first-child { margin-top: 0; border-top: 0; }
     .record-group-heading { margin: 10px 0 2px; font-size: 16px; }
@@ -142,8 +145,8 @@
       <label for="currentRound">Ronda actual</label>
       <select id="currentRound" required></select>
     </section>
-
     <section>
+      <div id="pilotCount" class="subtle pilot-count">Pilotos (0)</div>
       <div id="personList" class="person-list" aria-label="Pilot list"></div>
     </section>
 
@@ -287,9 +290,9 @@
         </div>
       </div>
       <div style="margin-top: 12px; margin-bottom: 12px;">
-        <div>
-          <h2 style="margin-bottom:3px">Registros</h2>
-          <div id="recordCount" class="subtle">0 reg</div>
+        <div class="records-title">
+          <h2>Registros</h2>
+          <div id="recordCount">0 vuelos</div>
         </div>
       </div>
       <div id="recordsList"><p class="subtle">No se han registrado vuelos aún.</p></div>
@@ -580,6 +583,7 @@
 
   function renderPilots() {
     const list = $('personList');
+    $('pilotCount').textContent = `Pilotos (${state.pilots.length})`;
     list.innerHTML = '';
     state.pilots.forEach(p => {
       const btn = document.createElement('button');
@@ -609,6 +613,15 @@
   function renderRecords() {
     $('recordCount').textContent = `${state.records.length} ${state.records.length === 1 ? 'vuelo' : 'vuelos'}`;
     const host = $('recordsList');
+    const roundCounts = new Map();
+    const groupCounts = new Map();
+    state.records.forEach(record => {
+      const round = Number(record.round);
+      const group = Number(record.group);
+      roundCounts.set(round, (roundCounts.get(round) || 0) + 1);
+      const groupKey = `${round}|${group}`;
+      groupCounts.set(groupKey, (groupCounts.get(groupKey) || 0) + 1);
+    });
     if (!state.records.length) {
       host.innerHTML = '<p class="subtle">Aún no hay registros guardados.</p>';
       return;
@@ -625,7 +638,7 @@
       if (Number(r.round) !== previousRound) {
         const roundHeading = document.createElement('h3');
         roundHeading.className = 'record-round-heading';
-        roundHeading.textContent = `Ronda ${r.round}`;
+        roundHeading.textContent = `Ronda ${r.round} (${roundCounts.get(Number(r.round)) || 0})`;
         host.appendChild(roundHeading);
         previousRound = Number(r.round);
         previousGroup = null;
@@ -633,7 +646,8 @@
       if (Number(r.group) !== previousGroup) {
         const groupHeading = document.createElement('h4');
         groupHeading.className = 'record-group-heading';
-        groupHeading.textContent = `Grupo ${r.group}`;
+        const groupKey = `${Number(r.round)}|${Number(r.group)}`;
+        groupHeading.textContent = `Grupo ${r.group} (${groupCounts.get(groupKey) || 0})`;
         host.appendChild(groupHeading);
         previousGroup = Number(r.group);
       }
