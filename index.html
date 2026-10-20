@@ -48,6 +48,9 @@
     .pilot-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     .contest-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .field.full { grid-column: 1 / -1; }
+    .round-selector { display: flex; align-items: center; gap: 10px; }
+    .round-selector label { flex: 0 0 auto; margin: 0; }
+    .round-selector select { flex: 1; min-width: 0; }
     .panel { border: 3px solid #000; border-radius: 10px; padding: 12px; background: var(--panel); }
     .subtle { color: var(--muted); font-size: 16px; font-weight: 700; }
     .person-list { display: grid; gap: 8px; }
@@ -112,10 +115,6 @@
   <p id="storageError" class="storage-error hidden" role="alert"></p>
 
   <main id="appMain" inert aria-busy="true">
-    <section class="field">
-      <label for="currentRound">Ronda actual</label>
-      <select id="currentRound" required></select>
-    </section>
     <section id="pilotsSection">
       <div class="section-head">
         <!-- <div>
@@ -137,6 +136,14 @@
           <button id="addPilotBtn" class="primary" type="button">Agregar piloto</button>
         </div>
       </div>
+    </section>
+
+    <section class="field round-selector">
+      <label for="currentRound">Ronda actual</label>
+      <select id="currentRound" required></select>
+    </section>
+
+    <section>
       <div id="personList" class="person-list" aria-label="Pilot list"></div>
     </section>
 
